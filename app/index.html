@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>차트맞히기</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0f1117" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #181b25;
+    --panel2: #20242f;
+    --text: #e8eaf0;
+    --sub: #8a8fa3;
+    --up: #ef4444;
+    --down: #3b82f6;
+    --accent: #f5c518;
+    --line: #2a2e3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  header h1 {
+    font-size: 19px;
+    margin: 0;
+  }
+  .pill {
+    background: var(--panel2);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: var(--sub);
+  }
+  .pill b { color: var(--text); }
+
+  .card {
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .card h2 {
+    font-size: 15px;
+    margin: 0 0 10px;
+    color: var(--sub);
+    font-weight: 600;
+  }
+  .opt-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .opt-btn {
+    flex: 1;
+    min-width: 70px;
+    padding: 10px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--panel2);
+    color: var(--sub);
+    font-size: 14px;
+    text-align: center;
+  }
+  .opt-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: #2a2710;
+  }
+  .primary-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    background: var(--accent);
+    color: #1a1a1a;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .primary-btn:disabled {
+    background: #44433a;
+    color: #8a8a80;
+  }
+  .secondary-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--sub);
+    font-size: 15px;
+    margin-top: 8px;
+  }
+
+  #chartWrap {
+    background: var(--panel2);
+    border-radius: 12px;
+    padding: 8px;
+    margin-bottom: 14px;
+  }
+  canvas { width: 100%; display: block; }
+  .ma-legend {
+    display: flex;
+    gap: 14px;
+    justify-content: flex-end;
+    padding: 6px 4px 0;
+    font-size: 12px;
+    color: var(--sub);
+  }
+  .ma-legend span { display: flex; align-items: center; gap: 4px; }
+  .ma-legend i { width: 10px; height: 2px; display: inline-block; }
+
+  .choice-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .choice-btn {
+    flex: 1;
+    padding: 18px;
+    border-radius: 12px;
+    border: 2px solid var(--line);
+    background: var(--panel2);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--sub);
+  }
+  .choice-btn.up.selected { border-color: var(--up); color: var(--up); background: #2a1414; }
+  .choice-btn.down.selected { border-color: var(--down); color: var(--down); background: #122033; }
+  .choice-btn:disabled { opacity: 0.55; }
+
+  #resultBanner {
+    text-align: center;
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    display: none;
+  }
+  #resultBanner.correct { background: #123022; color: #4ade80; display: block; }
+  #resultBanner.wrong { background: #301414; color: #f87171; display: block; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .stat-grid {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stat-box {
+    flex: 1;
+    background: var(--panel2);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+  .stat-box .num { font-size: 24px; font-weight: 800; color: var(--accent); }
+  .stat-box .label { font-size: 12px; color: var(--sub); margin-top: 2px; }
+
+  footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: auto; padding-top: 16px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>📊 차트맞히기</h1>
+    <div class="pill" id="bankInfo">로딩중...</div>
+  </header>
+
+  <!-- 설정 화면 -->
+  <div class="screen active" id="screen-setup">
+    <div class="card">
+      <h2>시장</h2>
+      <div class="opt-row" id="marketOpts">
+        <div class="opt-btn active" data-val="ALL">전체</div>
+        <div class="opt-btn" data-val="KR">국내</div>
+        <div class="opt-btn" data-val="US">미국</div>
+      </div>
+      <h2>타임프레임</h2>
+      <div class="opt-row" id="tfOpts">
+        <div class="opt-btn active" data-val="ALL">전체</div>
+        <div class="opt-btn" data-val="1d">일봉</div>
+        <div class="opt-btn" data-val="1w">주봉</div>
+        <div class="opt-btn" data-val="3m">3분봉</div>
+      </div>
+      <h2>라운드 수</h2>
+      <div class="opt-row" id="roundOpts">
+        <div class="opt-btn" data-val="5">5</div>
+        <div class="opt-btn active" data-val="10">10</div>
+        <div class="opt-btn" data-val="15">15</div>
+      </div>
+    </div>
+    <button class="primary-btn" id="startBtn">시작하기</button>
+  </div>
+
+  <!-- 플레이 화면 -->
+  <div class="screen" id="screen-play">
+    <div class="stat-grid">
+      <div class="stat-box"><div class="num" id="hudRound">1/10</div><div class="label">라운드</div></div>
+      <div class="stat-box"><div class="num" id="hudScore">0</div><div class="label">정답</div></div>
+      <div class="stat-box"><div class="num" id="hudStreak">0</div><div class="label">연속</div></div>
+    </div>
+
+    <div id="chartWrap">
+      <canvas id="chart" width="440" height="380"></canvas>
+      <div id="maLegend" class="ma-legend">
+        <span><i style="background:#fbbf24"></i>5</span>
+        <span><i style="background:#34d399"></i>10</span>
+        <span><i style="background:#a78bfa"></i>20</span>
+      </div>
+    </div>
+
+    <div id="resultBanner"></div>
+
+    <div class="choice-row">
+      <div class="choice-btn up" id="btnUp">▲ 위</div>
+      <div class="choice-btn down" id="btnDown">▼ 아래</div>
+    </div>
+
+    <button class="primary-btn" id="playBtn" disabled>플레이</button>
+    <button class="secondary-btn" id="nextBtn" style="display:none;">다음 문제 →</button>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div class="screen" id="screen-result">
+    <div class="card" style="text-align:center;">
+      <h2 style="font-size:18px; color:var(--text);">라운드 종료!</h2>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="num" id="resScore">0/0</div><div class="label">정답</div></div>
+        <div class="stat-box"><div class="num" id="resAcc">0%</div><div class="label">적중률</div></div>
+        <div class="stat-box"><div class="num" id="resBest">0</div><div class="label">최고 연속</div></div>
+      </div>
+    </div>
+    <button class="primary-btn" id="shareBtn">결과 공유하기</button>
+    <button class="secondary-btn" id="retryBtn">다시하기</button>
+  </div>
+
+  <footer>실제 종목명·날짜는 표시하지 않습니다 · 패턴만으로 승부!</footer>
+</div>
+
+<script src="sample_questions.js"></script>
+<script src="questions-data.js" onerror="void(0)"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ---------- 데이터 풀 ----------
+  function getBank() {
+    if (window.QUESTION_BANK && window.QUESTION_BANK.length) return window.QUESTION_BANK;
+    return window.SAMPLE_QUESTIONS || [];
+  }
+
+  var state = {
+    market: "ALL",
+    timeframe: "ALL",
+    rounds: 10,
+    queue: [],
+    roundIdx: 0,
+    score: 0,
+    streak: 0,
+    bestStreak: 0,
+    choice: null,
+    playing: false,
+  };
+
+  // ---------- 화면 전환 ----------
+  function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(function (el) { el.classList.remove("active"); });
+    document.getElementById(id).classList.add("active");
+  }
+
+  // ---------- 옵션 버튼 ----------
+  function wireOptGroup(containerId, onPick) {
+    var el = document.getElementById(containerId);
+    el.querySelectorAll(".opt-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        el.querySelectorAll(".opt-btn").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        onPick(btn.getAttribute("data-val"));
+      });
+    });
+  }
+  wireOptGroup("marketOpts", function (v) { state.market = v; });
+  wireOptGroup("tfOpts", function (v) { state.timeframe = v; });
+  wireOptGroup("roundOpts", function (v) { state.rounds = parseInt(v, 10); });
+
+  // ---------- 문제 큐 구성 ----------
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function buildQueue() {
+    var bank = getBank();
+    var filtered = bank.filter(function (q) {
+      var okMarket = state.market === "ALL" || q.market === state.market;
+      var okTf = state.timeframe === "ALL" || q.timeframe === state.timeframe;
+      return okMarket && okTf;
+    });
+    filtered = shuffle(filtered);
+    if (filtered.length === 0) filtered = shuffle(bank);
+    var queue = [];
+    for (var i = 0; i < state.rounds; i++) {
+      queue.push(filtered[i % filtered.length]);
+    }
+    return queue;
+  }
+
+  // ---------- 차트 그리기 ----------
+  var canvas = document.getElementById("chart");
+  var ctx = canvas.getContext("2d");
+  var CW = canvas.width, CH = canvas.height;
+  var PRICE_H = 270, VOL_H = 90, GAP = 8;
+  var LEAD_N = 30;
+  var REVEAL_N = 5;
+  var MAX_SLOTS = LEAD_N + REVEAL_N;
+  var MA_COLORS = { 5: "#fbbf24", 10: "#34d399", 20: "#a78bfa" };
+
+  function drawChart(candles, revealCount, opts) {
+    opts = opts || {};
+    ctx.clearRect(0, 0, CW, CH);
+    var visible = candles.slice(0, revealCount);
+    if (visible.length === 0) return;
+
+    var lows = visible.map(function (c) { return c.l; });
+    var highs = visible.map(function (c) { return c.h; });
+    Object.keys(MA_COLORS).forEach(function (p) {
+      visible.forEach(function (c) {
+        if (c["ma" + p] !== undefined) { lows.push(c["ma" + p]); highs.push(c["ma" + p]); }
+      });
+    });
+    var minP = Math.min.apply(null, lows);
+    var maxP = Math.max.apply(null, highs);
+    var pad = (maxP - minP) * 0.12 || maxP * 0.02 || 1;
+    minP -= pad; maxP += pad;
+
+    var maxV = Math.max.apply(null, visible.map(function (c) { return c.v; })) || 1;
+
+    var slotW = CW / MAX_SLOTS;
+    var bodyW = slotW * 0.55;
+
+    // 그리드
+    ctx.strokeStyle = "#2a2e3a";
+    ctx.lineWidth = 1;
+    for (var g = 1; g < 4; g++) {
+      var y = (PRICE_H / 4) * g;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke();
+    }
+
+    function priceToY(p) {
+      return PRICE_H - ((p - minP) / (maxP - minP)) * PRICE_H;
+    }
+
+    Object.keys(MA_COLORS).forEach(function (p) {
+      ctx.strokeStyle = MA_COLORS[p];
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      var started = false;
+      visible.forEach(function (c, i) {
+        var val = c["ma" + p];
+        if (val === undefined) { started = false; return; }
+        var cx = slotW * i + slotW / 2;
+        var cy = priceToY(val);
+        if (!started) { ctx.moveTo(cx, cy); started = true; } else { ctx.lineTo(cx, cy); }
+      });
+      ctx.stroke();
+    });
+
+    visible.forEach(function (c, i) {
+      var cx = slotW * i + slotW / 2;
+      var isEvent = opts.eventIndex === i;
+      var up = c.c >= c.o;
+      var color = up ? getCss("--up") : getCss("--down");
+      if (isEvent && opts.eventScale !== undefined) {
+        drawAnimatedCandle(cx, bodyW, c, opts.eventScale, color, priceToY);
+      } else {
+        drawCandle(cx, bodyW, c, color, priceToY);
+      }
+
+      // 볼륨
+      var vh = (c.v / maxV) * VOL_H;
+      ctx.fillStyle = color;
+      ctx.globalAlpha = isEvent ? 1 : 0.55;
+      ctx.fillRect(cx - bodyW / 2, PRICE_H + GAP + (VOL_H - vh), bodyW, vh);
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  function drawCandle(cx, bodyW, c, color, priceToY) {
+    var yO = priceToY(c.o), yC = priceToY(c.c), yH = priceToY(c.h), yL = priceToY(c.l);
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx, yH); ctx.lineTo(cx, yL); ctx.stroke();
+    var top = Math.min(yO, yC), h = Math.max(2, Math.abs(yC - yO));
+    ctx.fillRect(cx - bodyW / 2, top, bodyW, h);
+  }
+
+  function drawAnimatedCandle(cx, bodyW, c, scale, color, priceToY) {
+    // scale: 0~1, 직전 종가 위치에서 시작해 실제 종가까지 자라나는 효과
+    var yO = priceToY(c.o);
+    var yCfull = priceToY(c.c);
+    var yC = yO + (yCfull - yO) * scale;
+    var yHfull = priceToY(c.h);
+    var yLfull = priceToY(c.l);
+    var yH = yO + (yHfull - yO) * scale;
+    var yL = yO + (yLfull - yO) * scale;
+
+    ctx.save();
+    if (scale > 0.85) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 18;
+    }
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, yH); ctx.lineTo(cx, yL); ctx.stroke();
+    var top = Math.min(yO, yC), h = Math.max(2, Math.abs(yC - yO));
+    ctx.fillRect(cx - bodyW / 2, top, bodyW, h);
+    ctx.restore();
+  }
+
+  function getCss(varName) {
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  }
+
+  // ---------- 라운드 진행 ----------
+  function currentQuestion() { return state.queue[state.roundIdx]; }
+
+  function startGame() {
+    state.queue = buildQueue();
+    state.roundIdx = 0;
+    state.score = 0;
+    state.streak = 0;
+    state.bestStreak = 0;
+    showScreen("screen-play");
+    loadRound();
+  }
+
+  function loadRound() {
+    state.choice = null;
+    state.playing = false;
+    var q = currentQuestion();
+    document.getElementById("hudRound").textContent = (state.roundIdx + 1) + "/" + state.rounds;
+    document.getElementById("hudScore").textContent = state.score;
+    document.getElementById("hudStreak").textContent = state.streak;
+    document.getElementById("resultBanner").style.display = "none";
+    document.getElementById("resultBanner").className = "";
+    document.getElementById("nextBtn").style.display = "none";
+    document.getElementById("playBtn").style.display = "block";
+    document.getElementById("playBtn").disabled = true;
+    document.getElementById("playBtn").textContent = "플레이";
+    setChoiceButtons(false, null);
+    drawChart(q.lead_candles, LEAD_N, {});
+  }
+
+  function setChoiceButtons(locked, selected) {
+    var up = document.getElementById("btnUp");
+    var down = document.getElementById("btnDown");
+    up.classList.toggle("selected", selected === "up");
+    down.classList.toggle("selected", selected === "down");
+    up.disabled = locked;
+    down.disabled = locked;
+  }
+
+  document.getElementById("btnUp").addEventListener("click", function () {
+    if (state.playing) return;
+    state.choice = "up";
+    setChoiceButtons(false, "up");
+    document.getElementById("playBtn").disabled = false;
+  });
+  document.getElementById("btnDown").addEventListener("click", function () {
+    if (state.playing) return;
+    state.choice = "down";
+    setChoiceButtons(false, "down");
+    document.getElementById("playBtn").disabled = false;
+  });
+
+  document.getElementById("playBtn").addEventListener("click", function () {
+    if (state.playing || !state.choice) return;
+    runPlayAnimation();
+  });
+
+  function runPlayAnimation() {
+    state.playing = true;
+    setChoiceButtons(true, state.choice);
+    document.getElementById("playBtn").disabled = true;
+    document.getElementById("playBtn").textContent = "재생중...";
+
+    var q = currentQuestion();
+    var full = q.lead_candles.concat(q.reveal_candles);
+    var STEP_MS = 700;
+    var revealed = LEAD_N; // 30개는 선택 전에 이미 공개된 상태
+
+    function revealNext() {
+      revealed++;
+      if (revealed < LEAD_N + REVEAL_N) {
+        drawChart(full, revealed, {});
+        setTimeout(revealNext, STEP_MS);
+      } else {
+        setTimeout(animateEvent, 350);
+      }
+    }
+    setTimeout(revealNext, STEP_MS);
+
+    function animateEvent() {
+      var t0 = performance.now();
+      var DUR = 550;
+      if (navigator.vibrate) navigator.vibrate(30);
+      function frame(now) {
+        var p = Math.min(1, (now - t0) / DUR);
+        var eased = 1 - Math.pow(1 - p, 3);
+        drawChart(full, LEAD_N + REVEAL_N, { eventIndex: LEAD_N + REVEAL_N - 1, eventScale: eased });
+        if (p < 1) {
+          requestAnimationFrame(frame);
+        } else {
+          onRevealDone();
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+  }
+
+  function onRevealDone() {
+    var q = currentQuestion();
+    var correct = state.choice === q.direction;
+    if (correct) {
+      state.score++;
+      state.streak++;
+      state.bestStreak = Math.max(state.bestStreak, state.streak);
+    } else {
+      state.streak = 0;
+    }
+    var banner = document.getElementById("resultBanner");
+    banner.className = correct ? "correct" : "wrong";
+    var dirLabel = q.direction === "up" ? "▲ 위" : "▼ 아래";
+    banner.textContent = (correct ? "✅ 정답! " : "❌ 오답! ") + "정답은 " + dirLabel +
+      " (" + (q.change_pct > 0 ? "+" : "") + q.change_pct + "%)";
+    banner.style.display = "block";
+
+    document.getElementById("hudScore").textContent = state.score;
+    document.getElementById("hudStreak").textContent = state.streak;
+    document.getElementById("playBtn").style.display = "none";
+    document.getElementById("nextBtn").style.display = "block";
+    state.playing = false;
+  }
+
+  document.getElementById("nextBtn").addEventListener("click", function () {
+    state.roundIdx++;
+    if (state.roundIdx >= state.rounds) {
+      finishGame();
+    } else {
+      loadRound();
+    }
+  });
+
+  function finishGame() {
+    document.getElementById("resScore").textContent = state.score + "/" + state.rounds;
+    document.getElementById("resAcc").textContent = Math.round((state.score / state.rounds) * 100) + "%";
+    document.getElementById("resBest").textContent = state.bestStreak;
+    showScreen("screen-result");
+  }
+
+  document.getElementById("retryBtn").addEventListener("click", function () {
+    showScreen("screen-setup");
+  });
+
+  document.getElementById("shareBtn").addEventListener("click", function () {
+    var text = "📊 차트맞히기 결과\n" + state.score + "/" + state.rounds + " 정답 (적중률 " +
+      Math.round((state.score / state.rounds) * 100) + "%) · 최고 연속 " + state.bestStreak + "회\n" +
+      "너도 한번 맞혀봐!";
+    if (navigator.share) {
+      navigator.share({ text: text }).catch(function () {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function () {
+        alert("결과가 클립보드에 복사됐어요!");
+      });
+    } else {
+      alert(text);
+    }
+  });
+
+  document.getElementById("startBtn").addEventListener("click", startGame);
+
+  // ---------- 초기화 ----------
+  function hideUnavailableOptions(containerId, key, bank) {
+    var available = {};
+    bank.forEach(function (q) { available[q[key]] = true; });
+    document.getElementById(containerId).querySelectorAll(".opt-btn").forEach(function (btn) {
+      var val = btn.getAttribute("data-val");
+      if (val !== "ALL" && !available[val]) btn.style.display = "none";
+    });
+  }
+
+  window.addEventListener("load", function () {
+    var bank = getBank();
+    var src = (window.QUESTION_BANK && window.QUESTION_BANK.length) ? "실데이터" : "샘플데이터";
+    document.getElementById("bankInfo").innerHTML = "문제풀 <b>" + bank.length + "</b>개 · " + src;
+    hideUnavailableOptions("marketOpts", "market", bank);
+    hideUnavailableOptions("tfOpts", "timeframe", bank);
+  });
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+})();
+</script>
+</body>
+</html>
