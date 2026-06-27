@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.chartpatterngame_gminvestment.twa",
+        "sha256_cert_fingerprints": ["45:4C:67:9B:DB:87:56:EC:D8:89:58:56:7C:80:ED:0A:8B:89:E7:3F:16:B6:A5:84:E0:05:C9:A1:7D:F8:5C:38"]
+      }
+    }]

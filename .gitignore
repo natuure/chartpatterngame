@@ -3,3 +3,5 @@ data/*.json
 __pycache__/
 *.pyc
 .claude/
+android/signing.keystore
+android/signing-key-info.txt
