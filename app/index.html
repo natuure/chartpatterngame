@@ -701,7 +701,9 @@
       if (!blob) { fallbackShare(); return; }
       var file = new File([blob], "chart-result.png", { type: "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({ files: [file], title: "차트맞히기 결과", text: text }).catch(function () {});
+        // 카카오톡 등 일부 앱은 text와 files를 같이 받으면 이미지를 무시하고 텍스트만 받는다.
+        // 점수 정보는 이미지 안에 이미 들어있으므로 파일 공유 시에는 text를 넣지 않는다.
+        navigator.share({ files: [file], title: "차트맞히기 결과" }).catch(function () {});
       } else if (navigator.clipboard && window.ClipboardItem) {
         navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]).then(function () {
           alert("결과 이미지가 클립보드에 복사됐어요!");
